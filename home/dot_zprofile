@@ -1,0 +1,10 @@
+# ~/.zprofile — managed by chezmoi (repo: tonytino/workstation)
+# Loaded once per login shell (before .zshrc). Put PATH/env here that other
+# tools may read before an interactive shell starts.
+
+# Homebrew shellenv (Apple Silicon and Intel both supported).
+if [ -x /opt/homebrew/bin/brew ]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [ -x /usr/local/bin/brew ]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi

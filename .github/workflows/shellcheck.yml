@@ -1,0 +1,23 @@
+name: shellcheck
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          severity: warning
+          scandir: '.'
+          additional_files: 'bootstrap.sh'
+        env:
+          SHELLCHECK_OPTS: -e SC1091

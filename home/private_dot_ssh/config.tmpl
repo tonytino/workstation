@@ -1,0 +1,16 @@
+# ~/.ssh/config — managed by chezmoi (repo: tonytino/workstation)
+# This template is intentionally minimal. Add host blocks as you accumulate
+# them. Private keys live in ~/.ssh/ and are NEVER committed (chezmoi's
+# `private_` prefix sets file mode 0600).
+
+Host *
+  AddKeysToAgent yes
+  UseKeychain yes
+  ServerAliveInterval 60
+  ServerAliveCountMax 3
+
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes

@@ -1,0 +1,66 @@
+# ~/.zshrc — managed by chezmoi (repo: tonytino/workstation)
+
+# ── Prompt ──────────────────────────────────────────────────────────────────
+# Ternary in the prompt: %(!.†.∆) is † when sudo, ∆ otherwise.
+# %? is exit code; green ∆ on success, red exit code on failure.
+export PROMPT='%(?.%F{green}∆.%F{red}%?)%f %B%F{124}%1~%f%b %F{green}%(!.†.∆) %f'
+
+# ── Exports ─────────────────────────────────────────────────────────────────
+export EDITOR=nvim
+export VISUAL=nvim
+export LSCOLORS=bxfxxxxxgxxxxxxxxxxxxx
+# Note: GREP_OPTIONS is deprecated and emits warnings into pipelines.
+# Use a per-invocation alias for color instead.
+alias grep='grep --color=auto'
+
+# ── History ─────────────────────────────────────────────────────────────────
+HISTFILE=~/.histfile
+HISTSIZE=10000
+SAVEHIST=10000
+setopt appendhistory autocd extendedglob nomatch sharehistory hist_ignore_dups
+bindkey -e
+
+# ── Completion ──────────────────────────────────────────────────────────────
+zstyle :compinstall filename "${HOME}/.zshrc"
+autoload -Uz compinit
+compinit
+
+# ── PATH ────────────────────────────────────────────────────────────────────
+export BUN_INSTALL="${HOME}/.bun"
+export PATH="${BUN_INSTALL}/bin:${HOME}/.local/bin:${PATH}"
+
+# ── Tool integrations (lazy where possible) ─────────────────────────────────
+# zoxide — smart cd. Use `z <partial>` to jump.
+command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
+
+# fzf — fuzzy finder. Ctrl-R = history, Ctrl-T = files, Alt-C = cd.
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# mise — runtime version manager (replaces nvm/rbenv/pyenv).
+command -v mise >/dev/null && eval "$(mise activate zsh)"
+
+# bun completions
+[ -s "${BUN_INSTALL}/_bun" ] && source "${BUN_INSTALL}/_bun"
+
+# ── Aliases ─────────────────────────────────────────────────────────────────
+# eza replaces ls when available; falls back to GNU/BSD ls.
+if command -v eza >/dev/null; then
+  alias ls='eza --group-directories-first'
+  alias ll='eza -l --git --group-directories-first'
+  alias llr='eza -l --git --sort=modified'
+  alias tree='eza --tree'
+else
+  alias ls='ls -GFh'
+  alias ll='ls -l'
+  alias llr='ls -ltr'
+fi
+
+# bat replaces cat when available.
+command -v bat >/dev/null && alias cat='bat --style=plain --paging=never'
+
+alias src="cd ~/src && ll"
+alias reload='. ~/.zshrc'
+alias rmrf='rm -rf node_modules'
+
+# Claude Code CLI — installed via the official installer to ~/.claude/local/.
+alias claude="${HOME}/.claude/local/claude"

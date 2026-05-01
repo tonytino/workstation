@@ -1,0 +1,63 @@
+; ~/.gitconfig — managed by chezmoi (repo: tonytino/workstation)
+; Templated: name + email are pulled from 1Password at apply time.
+; See `op item get "Git Identity" --vault Personal` for the source item.
+
+[user]
+  name = {{ onepasswordRead "op://Personal/Git Identity/name" }}
+  email = {{ onepasswordRead "op://Personal/Git Identity/email" }}
+
+[alias]
+  a = add
+  amend = commit --amend --no-edit
+  br = branch
+  ci = commit
+  co = checkout
+  df = diff
+  dff = diff --name-status
+  dfl = diff HEAD^
+  dfs = diff --staged
+  last = log -1 HEAD
+  lg = log -10 --pretty=format:'%h - %an, %ar : %s'
+  new = checkout -b
+  rename = branch -m
+  st = status
+  undo = reset HEAD~
+  unstage = reset HEAD --
+
+[color "status"]
+  added = green
+  changed = yellow
+  untracked = cyan
+
+[core]
+  excludesfile = ~/.gitignore_global
+  editor = nvim
+  pager = delta
+
+[init]
+  defaultBranch = main
+
+[push]
+  default = current
+  autoSetupRemote = true
+
+[pull]
+  rebase = true
+
+[fetch]
+  prune = true
+
+[rebase]
+  autoStash = true
+
+[diff]
+  colorMoved = default
+
+[interactive]
+  diffFilter = delta --color-only
+
+[delta]
+  navigate = true
+  light = false
+  line-numbers = true
+  syntax-theme = GitHub

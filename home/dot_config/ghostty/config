@@ -1,0 +1,61 @@
+# Ghostty configuration — managed by chezmoi (repo: tonytino/workstation)
+# Reference: https://ghostty.org/docs/config/reference
+
+# ── Visual baseline ─────────────────────────────────────────────────────────
+font-family = JetBrainsMono Nerd Font
+font-size = 14
+window-padding-x = 12
+window-padding-y = 12
+window-padding-balance = true
+background-opacity = 0.96
+background-blur = 20
+cursor-style = block
+mouse-hide-while-typing = true
+
+# ── Custom palette: dark daltonized ─────────────────────────────────────────
+# Mirrors Claude Code's dark-daltonized theme. Daltonization swaps the
+# red/green ANSI pair for orange/purple so diffs and `git status` stay
+# distinguishable for red/green color vision deficiency.
+background = 0d1117
+foreground = c9d1d9
+cursor-color = 58a6ff
+selection-background = 264f78
+
+palette = 0=#0d1117
+palette = 1=#ff7b72
+palette = 2=#d2a8ff
+palette = 3=#ffa657
+palette = 4=#58a6ff
+palette = 5=#bc8cff
+palette = 6=#39c5cf
+palette = 7=#b1bac4
+palette = 8=#6e7681
+palette = 9=#ffa198
+palette = 10=#e3b8ff
+palette = 11=#ffc680
+palette = 12=#79c0ff
+palette = 13=#d2a8ff
+palette = 14=#56d4dd
+palette = 15=#f0f6fc
+
+# ── macOS niceties ──────────────────────────────────────────────────────────
+macos-titlebar-style = tabs
+macos-option-as-alt = true
+macos-non-native-fullscreen = visible-menu
+confirm-close-surface = false
+
+# ── Shell integration ───────────────────────────────────────────────────────
+shell-integration = zsh
+shell-integration-features = cursor,sudo,title,ssh-env,ssh-terminfo
+
+# ── Scrollback + clipboard ──────────────────────────────────────────────────
+scrollback-limit = 100000000
+copy-on-select = true
+clipboard-paste-protection = true
+clipboard-trim-trailing-spaces = true
+
+# ── Quick Terminal (Cmd+` from anywhere in macOS) ──────────────────────────
+keybind = global:cmd+grave_accent=toggle_quick_terminal
+quick-terminal-position = top
+quick-terminal-screen = mouse
+quick-terminal-animation-duration = 0.1
