@@ -54,7 +54,7 @@ banner() {
 }
 
 # 1. Pre-flight ----------------------------------------------------------------
-banner "1/11 Pre-flight checks"
+banner "1/12 Pre-flight checks"
 if [ "$(uname)" != "Darwin" ]; then
   echo "This script is macOS-only. Aborting."
   exit 1
@@ -69,7 +69,7 @@ trap 'if [ -n "${SUDO_KEEPALIVE_PID}" ]; then kill "${SUDO_KEEPALIVE_PID}" 2>/de
 SUDO_KEEPALIVE_PID=$!
 
 # 2. Homebrew -----------------------------------------------------------------
-banner "2/11 Homebrew"
+banner "2/12 Homebrew"
 bash "${SCRIPTS}/install-homebrew.sh"
 if [ -x /opt/homebrew/bin/brew ]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -78,15 +78,15 @@ elif [ -x /usr/local/bin/brew ]; then
 fi
 
 # 3. 1Password app + CLI ------------------------------------------------------
-banner "3/11 1Password app + CLI"
+banner "3/12 1Password app + CLI"
 bash "${SCRIPTS}/install-1password.sh"
 
 # 4. chezmoi ------------------------------------------------------------------
-banner "4/11 chezmoi"
+banner "4/12 chezmoi"
 bash "${SCRIPTS}/install-chezmoi.sh"
 
 # 5. Apply chezmoi (renders templates, lays down configs) ---------------------
-banner "5/11 chezmoi apply"
+banner "5/12 chezmoi apply"
 echo "Initializing chezmoi from local repo at ${REPO_ROOT}..."
 # Point chezmoi at the repo root; .chezmoiroot tells it to use ./home/ as
 # the source directory.
@@ -97,16 +97,16 @@ echo "Applying chezmoi (renders templates, lays down configs)..."
 chezmoi apply
 
 # 6. Brewfile (CLIs, fonts, casks) --------------------------------------------
-banner "6/11 Brewfile"
+banner "6/12 Brewfile"
 brew bundle --file="${MACOS_DIR}/Brewfile"
 
 # 7. macOS defaults -----------------------------------------------------------
-banner "7/11 macOS defaults"
+banner "7/12 macOS defaults"
 bash "${MACOS_DIR}/defaults.sh"
 
 # 8. GitHub auth (interactive if not already authed) -------------------------
 # Done BEFORE SSH provisioning so 'gh ssh-key add' has the right OAuth scope.
-banner "8/11 GitHub auth"
+banner "8/12 GitHub auth"
 REQUIRED_SCOPES="admin:public_key,repo,read:org,workflow"
 if gh auth status 2>&1 | grep -q "Token scopes"; then
   echo "gh already authenticated. Refreshing scopes to include admin:public_key..."
@@ -117,15 +117,21 @@ else
 fi
 
 # 9. SSH key + GitHub registration --------------------------------------------
-banner "9/11 SSH key + GitHub registration"
+banner "9/12 SSH key + GitHub registration"
 bash "${SCRIPTS}/provision-ssh.sh"
 
 # 10. Claude Code -------------------------------------------------------------
-banner "10/11 Claude Code"
+banner "10/12 Claude Code"
 bash "${SCRIPTS}/install-claude-code.sh"
 
-# 11. Manual follow-up checklist ----------------------------------------------
-banner "11/11 Manual follow-ups"
+# 11. Claude memory -----------------------------------------------------------
+# Clone the private agent-memory repo into place. Runs after SSH provisioning
+# (stage 9) so the SSH remote authenticates.
+banner "11/12 Claude memory"
+bash "${SCRIPTS}/clone-claude-memory.sh"
+
+# 12. Manual follow-up checklist ----------------------------------------------
+banner "12/12 Manual follow-ups"
 cat <<'EOF'
 
 Bootstrap complete. A few things require human clicks; do these now:

@@ -12,21 +12,25 @@ echo "→ Applying macOS defaults..."
 defaults write NSGlobalDomain KeyRepeat -int 2
 defaults write NSGlobalDomain InitialKeyRepeat -int 15
 
-# Disable press-and-hold accent menu so vim h/j/k/l repeat works.
-defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
+# Note: ApplePressAndHoldEnabled is left at the macOS default. Disabling it
+# would let vim h/j/k/l repeat in some terminal editors, but it also breaks
+# the press-and-hold accent menu, which is more useful day-to-day. Arrow
+# keys still repeat fine in Vim regardless.
 
 # ── Screenshots ─────────────────────────────────────────────────────────────
 mkdir -p "${HOME}/Pictures/Screenshots"
 defaults write com.apple.screencapture location -string "${HOME}/Pictures/Screenshots"
 defaults write com.apple.screencapture type -string "png"
-defaults write com.apple.screencapture disable-shadow -bool true
+# Window-screenshot drop shadow stays enabled (macOS default) per user
+# preference -- the shadow is part of the desired aesthetic.
 
 # ── Finder ──────────────────────────────────────────────────────────────────
 defaults write NSGlobalDomain AppleShowAllExtensions -bool true
-defaults write com.apple.finder AppleShowAllFiles -bool true
+# Hidden files stay hidden by default (use Cmd+Shift+. to toggle per-window).
 defaults write com.apple.finder ShowPathbar -bool true
 defaults write com.apple.finder ShowStatusBar -bool true
-defaults write com.apple.finder FXPreferredViewStyle -string "Nlsv"  # list view default
+# View styles: icnv=Icon, Nlsv=List, clmv=Column, glyv=Gallery.
+defaults write com.apple.finder FXPreferredViewStyle -string "clmv"  # column view default
 defaults write com.apple.finder _FXSortFoldersFirst -bool true
 defaults write com.apple.finder FXDefaultSearchScope -string "SCcf"  # search current folder by default
 
@@ -35,7 +39,9 @@ defaults write com.apple.dock autohide -bool true
 defaults write com.apple.dock autohide-time-modifier -float 0.4
 defaults write com.apple.dock autohide-delay -float 0
 defaults write com.apple.dock show-recents -bool false
-defaults write com.apple.dock minimize-to-application -bool true
+# minimize-to-application stays at default (false) -- minimized windows
+# remain as separate previews on the right side of the Dock rather than
+# collapsing into their app icon.
 
 # ── Save / Print dialogs ────────────────────────────────────────────────────
 defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode -bool true

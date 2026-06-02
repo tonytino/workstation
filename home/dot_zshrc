@@ -62,5 +62,20 @@ alias src="cd ~/src && ll"
 alias reload='. ~/.zshrc'
 alias rmrf='rm -rf node_modules'
 
+# Sync Claude Code memories to the private claude-memory repo. The memory dir
+# name encodes the cwd Claude was started from, so glob for the one git repo
+# under ~/.claude/projects/*/memory.
+mem-sync() {
+  local dir
+  dir="$(find "${HOME}/.claude/projects" -maxdepth 2 -type d -name memory 2>/dev/null | head -1)"
+  if [ -z "${dir}" ] || [ ! -d "${dir}/.git" ]; then
+    echo "mem-sync: no git-tracked memory dir found under ~/.claude/projects/*/memory" >&2
+    return 1
+  fi
+  git -C "${dir}" add -A && \
+    git -C "${dir}" commit -m "memory sync $(date +%F)" && \
+    git -C "${dir}" push
+}
+
 # Claude Code CLI — installed via the official installer to ~/.claude/local/.
 alias claude="${HOME}/.claude/local/claude"

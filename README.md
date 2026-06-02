@@ -14,7 +14,7 @@ safe.
 
 ## What it does
 
-Eleven stages, each a separate helper script under `scripts/`:
+Twelve stages, each a separate helper script under `scripts/`:
 
 1. Pre-flight checks (assert macOS, cache sudo).
 2. Install Homebrew (official installer).
@@ -25,12 +25,13 @@ Eleven stages, each a separate helper script under `scripts/`:
    value that comes from 1Password is read at apply time via `op`.
 6. `brew bundle` against `macos/Brewfile` — CLIs, fonts, casks.
 7. `macos/defaults.sh` — curated, reversible `defaults write` commands.
-8. Generate an ed25519 SSH key (interactive passphrase), add it to ssh-agent
+8. `gh auth login` (or `gh auth refresh`) with the `admin:public_key` scope so
+   the next stage can register an SSH key.
+9. Generate an ed25519 SSH key (interactive passphrase), add it to ssh-agent
    + Apple Keychain, register the public key with GitHub via `gh`.
-9. `gh auth login` if not already authenticated.
-10. Install Claude Code (official installer); user runs `/login`
-    interactively.
-11. Print a manual follow-up checklist.
+10. Install Claude Code (official installer); user runs `/login` interactively.
+11. Clone the private `claude-memory` repo into the Claude Code memory dir.
+12. Print a manual follow-up checklist.
 
 ## Security model
 

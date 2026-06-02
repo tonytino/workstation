@@ -36,7 +36,7 @@ Hands will hurt for the first few days. By day 7, the muscle memory is there.
 
 | Command | What it does |
 |---|---|
-| `h j k l` | Cursor left / down / up / right |
+| `h j k l` (or arrow keys) | Cursor left / down / up / right |
 | `w` / `b` | Forward / back one word |
 | `gg` / `G` | Top / bottom of file |
 | `42G` | Jump to line 42 |
@@ -53,6 +53,11 @@ Hands will hurt for the first few days. By day 7, the muscle memory is there.
 | `Esc` | Back to Normal mode (or, in this config, clears search highlight) |
 
 That covers ~80% of daily editing.
+
+**Arrow keys work everywhere.** `hjkl` is just the home-row equivalent — your
+fingers eventually want it because the home row is faster, but arrow keys
+are fully supported in every mode and compose with verbs the same way
+(`d→` deletes the next character, etc.). No rush.
 
 ## Modes
 
