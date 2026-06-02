@@ -87,14 +87,12 @@ bash "${SCRIPTS}/install-chezmoi.sh"
 
 # 5. Apply chezmoi (renders templates, lays down configs) ---------------------
 banner "5/12 chezmoi apply"
-echo "Initializing chezmoi from local repo at ${REPO_ROOT}..."
-# Point chezmoi at the repo root; .chezmoiroot tells it to use ./home/ as
-# the source directory.
-if ! chezmoi source-path >/dev/null 2>&1; then
-  chezmoi init --source="${REPO_ROOT}"
-fi
-echo "Applying chezmoi (renders templates, lays down configs)..."
-chezmoi apply
+# Pass --source explicitly: `chezmoi init --source=...` does NOT persist the
+# source dir to config, so a bare `chezmoi apply` would fall back to the
+# default (~/.local/share/chezmoi) and silently no-op when run from a clone
+# elsewhere. .chezmoiroot inside the repo redirects the source to ./home/.
+echo "Applying chezmoi from ${REPO_ROOT} (renders templates, lays down configs)..."
+chezmoi apply --source="${REPO_ROOT}"
 
 # 6. Brewfile (CLIs, fonts, casks) --------------------------------------------
 banner "6/12 Brewfile"

@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# chezmoi modify_ script for ~/.claude/settings.json
+#
+# chezmoi pipes the CURRENT file contents on stdin (empty if the file doesn't
+# exist) and uses our stdout as the new contents. We merge only the keys we
+# want to manage and preserve everything else — notably runtime keys that
+# Claude Code writes itself (feedbackSurveyState, etc.), which would otherwise
+# cause perpetual `chezmoi status` drift.
+set -euo pipefail
+
+# The subset of settings we manage. Deep-merged over whatever already exists.
+# Object keys merge; the permissions.allow array is replaced wholesale so this
+# list stays authoritative.
+read -r -d '' MANAGED <<'JSON' || true
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh label list:*)",
+      "Bash(pnpm check:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm exec vitest run:*)",
+      "Bash(pnpm exec biome check:*)"
+    ]
+  },
+  "theme": "dark-daltonized",
+  "voiceEnabled": true,
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
+  }
+}
+JSON
+
+existing="$(cat)"
+
+# Fresh machine (no existing file) or jq not yet installed (chezmoi apply runs
+# before the Brewfile stage): emit the managed config verbatim. There's nothing
+# to preserve in that case.
+if [ -z "${existing//[[:space:]]/}" ] || ! command -v jq >/dev/null 2>&1; then
+  printf '%s\n' "${MANAGED}"
+  exit 0
+fi
+
+# Otherwise deep-merge managed keys over the existing file, preserving any
+# runtime-written keys.
+printf '%s' "${existing}" | jq --argjson managed "${MANAGED}" '. * $managed'

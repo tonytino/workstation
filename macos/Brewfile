@@ -23,10 +23,11 @@ brew "yq"                # YAML processor
 brew "tldr"              # simplified man pages
 brew "htop"              # process viewer
 brew "neovim"            # editor (default $EDITOR)
-brew "mise"              # runtime version manager (replaces nvm/rbenv/pyenv)
 brew "imagemagick"       # image manipulation
 brew "pnpm"              # JS package manager
 brew "bun"               # JS runtime + package manager
+# Note: no Node runtime / version manager here on purpose. Node is a
+# per-machine concern (work uses nvm) — set it up in ~/.zshrc.local.
 brew "gitleaks"          # secret-scanning, used by pre-commit hook
 
 # ── Fonts ───────────────────────────────────────────────────────────────────

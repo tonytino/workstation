@@ -1,5 +1,10 @@
 # ~/.zshrc — managed by chezmoi (repo: tonytino/workstation)
 
+# ── Machine-local pre-hook ───────────────────────────────────────────────────
+# Per-machine setup that must run early (e.g. vendor shell integrations whose
+# "pre" block expects to be near the top). Not managed by chezmoi.
+[ -f ~/.zshrc.local.pre ] && source ~/.zshrc.local.pre
+
 # ── Prompt ──────────────────────────────────────────────────────────────────
 # Ternary in the prompt: %(!.†.∆) is † when sudo, ∆ otherwise.
 # %? is exit code; green ∆ on success, red exit code on failure.
@@ -36,8 +41,8 @@ command -v zoxide >/dev/null && eval "$(zoxide init zsh)"
 # fzf — fuzzy finder. Ctrl-R = history, Ctrl-T = files, Alt-C = cd.
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
-# mise — runtime version manager (replaces nvm/rbenv/pyenv).
-command -v mise >/dev/null && eval "$(mise activate zsh)"
+# Node runtime is intentionally NOT configured here. It's a per-machine concern
+# (work uses nvm, home may differ) — set it up in ~/.zshrc.local.
 
 # bun completions
 [ -s "${BUN_INSTALL}/_bun" ] && source "${BUN_INSTALL}/_bun"
@@ -79,3 +84,8 @@ mem-sync() {
 
 # Claude Code CLI — installed via the official installer to ~/.claude/local/.
 alias claude="${HOME}/.claude/local/claude"
+
+# ── Machine-local overrides ──────────────────────────────────────────────────
+# Per-machine config (Node version manager, vendor integrations, work-only
+# tooling). Not managed by chezmoi; create it by hand on each machine.
+[ -f ~/.zshrc.local ] && source ~/.zshrc.local

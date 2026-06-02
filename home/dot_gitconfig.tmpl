@@ -61,3 +61,11 @@
   light = false
   line-numbers = true
   syntax-theme = GitHub
+
+; Machine-local overrides (NOT managed by chezmoi). Create ~/.gitconfig.local
+; on a per-machine basis — e.g. a work email scoped to work repos:
+;   [includeIf "gitdir:~/work/"]
+;     path = ~/.gitconfig-work
+; Anything here wins over the settings above because the include is last.
+[include]
+  path = ~/.gitconfig.local

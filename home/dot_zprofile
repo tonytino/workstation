@@ -2,9 +2,15 @@
 # Loaded once per login shell (before .zshrc). Put PATH/env here that other
 # tools may read before an interactive shell starts.
 
+# Machine-local pre-hook (vendor integrations that expect to run early).
+[ -f ~/.zprofile.local.pre ] && source ~/.zprofile.local.pre
+
 # Homebrew shellenv (Apple Silicon and Intel both supported).
 if [ -x /opt/homebrew/bin/brew ]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 elif [ -x /usr/local/bin/brew ]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
+
+# Machine-local overrides (not managed by chezmoi).
+[ -f ~/.zprofile.local ] && source ~/.zprofile.local

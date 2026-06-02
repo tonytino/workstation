@@ -10,12 +10,28 @@ The source-of-truth for everything that lands in `$HOME` lives under `home/` in 
 | `private_` | Sets file mode to `0600` |
 | `executable_` | Sets the executable bit |
 | `.tmpl` (suffix) | File is rendered as a Go template with chezmoi data + functions |
+| `modify_` | Executable script: receives the current target file on stdin, emits new contents on stdout |
 
 Stack them: `private_dot_ssh/config.tmpl` → `~/.ssh/config` (mode `0600`, templated).
 
 ## Template functions used in this repo
 
 - `onepasswordRead "op://..."` — fetches a secret from 1Password CLI at apply time. See [secrets.md](secrets.md).
+
+## Per-machine config: three mechanisms
+
+Pick by file format. Goal: the same repo applies cleanly on every machine, and machine-specific bits stay out of the repo.
+
+1. **Native include + `.local` sidecar** (preferred when the format supports it). The managed file pulls in an un-managed `~/.<x>.local`:
+   - zsh: `[ -f ~/.zshrc.local ] && source ~/.zshrc.local` (also `.local.pre` sourced early)
+   - git: `[include] path = ~/.gitconfig.local` (and `[includeIf "gitdir:~/work/"]` for work-scoped identity)
+   - The `.local` files are NOT committed here — created by hand per machine.
+2. **`modify_` script** — for structured formats with no include (JSON/plist). `modify_settings.json` merges our managed keys and preserves runtime-written keys (e.g. `feedbackSurveyState`) so `chezmoi status` stays clean.
+3. **Template conditionals** — `{{ if eq .chezmoi.hostname "..." }}` when you want per-machine logic kept in-repo (synced, non-sensitive).
+
+## settings.json never fully managed
+
+`~/.claude/settings.json` uses mechanism 2 (`modify_settings.json`). Claude Code rewrites that file at runtime; a plain managed copy would show perpetual drift. The modify script falls back to emitting the managed config verbatim when the file is absent or `jq` isn't installed yet (chezmoi apply runs before the Brewfile stage on a fresh machine).
 
 ## Adding a new dotfile
 

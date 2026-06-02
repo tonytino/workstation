@@ -65,7 +65,7 @@ workstation/
 │   │   └── nvim/                    # minimal lazy.nvim config
 │   └── dot_claude/
 │       ├── CLAUDE.md
-│       └── settings.json.tmpl
+│       └── modify_settings.json     # merge script (see "Machine-local" below)
 ├── macos/
 │   ├── Brewfile
 │   └── defaults.sh
@@ -75,6 +75,7 @@ workstation/
 │   ├── install-chezmoi.sh
 │   ├── provision-ssh.sh
 │   ├── install-claude-code.sh
+│   ├── clone-claude-memory.sh
 │   └── pre-commit-secret-scan.sh
 └── .github/workflows/
     ├── shellcheck.yml               # bash lint
@@ -86,6 +87,26 @@ chezmoi prefix conventions used:
 - `private_` — sets file mode `0600`
 - `executable_` — sets the executable bit
 - `.tmpl` — Go-template rendered at apply time
+- `modify_` — an executable script that receives the current target file on
+  stdin and emits the new contents on stdout (used to merge into files that
+  apps rewrite at runtime, e.g. `~/.claude/settings.json`)
+
+## Machine-local config (not in this repo)
+
+Anything that differs per machine lives in un-managed sidecar files that the
+managed configs pull in. These are **not** committed here — create them by
+hand on each machine. They're how the same repo works on a personal Mac and a
+work Mac without conflict.
+
+| Managed file | Loads | Put here |
+|---|---|---|
+| `~/.zshrc` | `~/.zshrc.local.pre` (early), `~/.zshrc.local` (late) | Node version manager (nvm at work), vendor shell integrations |
+| `~/.zprofile` | `~/.zprofile.local.pre`, `~/.zprofile.local` | login-shell-only machine bits |
+| `~/.gitconfig` | `~/.gitconfig.local` (via `[include]`) | work email scoped to work repos via `[includeIf "gitdir:~/work/"]`, signing keys |
+
+The repo itself installs **no Node runtime or version manager** — Node is
+delegated to `~/.zshrc.local` so a work machine can use nvm and a personal one
+can do whatever it likes.
 
 ## Day-to-day use
 
