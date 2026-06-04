@@ -18,6 +18,5 @@ jobs:
         with:
           severity: warning
           scandir: '.'
-          additional_files: 'bootstrap.sh'
         env:
           SHELLCHECK_OPTS: -e SC1091

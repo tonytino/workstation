@@ -3,3 +3,16 @@
 *.swp
 .env
 .env.*
+
+# Secret-file globs (defense in depth — never commit these)
+*.pem
+*.key
+id_rsa
+id_rsa.*
+id_ecdsa*
+id_ed25519*
+*.p12
+*.pfx
+.netrc
+.envrc
+.direnv/

@@ -8,6 +8,8 @@
 # ── Prompt ──────────────────────────────────────────────────────────────────
 # Ternary in the prompt: %(!.†.∆) is † when sudo, ∆ otherwise.
 # %? is exit code; green ∆ on success, red exit code on failure.
+# Needs the JetBrainsMono Nerd Font (installed via the Brewfile) for the † / ∆
+# glyphs; a vanilla terminal/font will render them as boxes.
 export PROMPT='%(?.%F{green}∆.%F{red}%?)%f %B%F{124}%1~%f%b %F{green}%(!.†.∆) %f'
 
 # ── Exports ─────────────────────────────────────────────────────────────────
@@ -28,7 +30,9 @@ bindkey -e
 # ── Completion ──────────────────────────────────────────────────────────────
 zstyle :compinstall filename "${HOME}/.zshrc"
 autoload -Uz compinit
-compinit
+# -u: skip the insecure-directories security prompt that fires on a fresh Mac
+# right after Homebrew installs completion files.
+compinit -u
 
 # ── PATH ────────────────────────────────────────────────────────────────────
 export BUN_INSTALL="${HOME}/.bun"
