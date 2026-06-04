@@ -10,7 +10,7 @@ Detailed guidance lives under `docs/agents/`; load only what your task needs.
 - **No third-party CLIs unless we own them.**
 - **Every shell script uses `set -euo pipefail` and is idempotent.** Re-running on a configured machine must be safe and a no-op where appropriate.
 - **Lint before pushing.** `gitleaks protect --staged` and ShellCheck must pass. CI runs both on every push and PR.
-- **Author identity for commits is `tonytino <10490190+tonytino@users.noreply.github.com>`.** The repo is intended to be public; no PII in git history.
+- **Author identity for commits is `tonytino <10490190+tonytino@users.noreply.github.com>`.** This repo is private; keep it that way. Use the noreply identity anyway — no personal email in git history.
 
 ## Detailed docs
 
