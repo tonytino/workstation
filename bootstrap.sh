@@ -32,8 +32,13 @@ if [ ! -f "$(dirname "$0")/scripts/install-homebrew.sh" ]; then
     exit 1
   fi
   if [ -d "${LOCAL_REPO}" ]; then
-    echo "${LOCAL_REPO} already exists -- pulling latest."
-    git -C "${LOCAL_REPO}" pull --ff-only
+    echo "${LOCAL_REPO} already exists -- syncing to origin/main."
+    # Force a predictable state: fetch, switch to main, fast-forward. Guards
+    # against an existing clone left on a feature branch (which would pull the
+    # wrong content or fail noisily).
+    git -C "${LOCAL_REPO}" fetch origin
+    git -C "${LOCAL_REPO}" checkout main
+    git -C "${LOCAL_REPO}" pull --ff-only origin main
   else
     mkdir -p "$(dirname "${LOCAL_REPO}")"
     git clone "${REPO_URL}" "${LOCAL_REPO}"
