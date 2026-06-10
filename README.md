@@ -14,7 +14,7 @@ safe.
 
 ## What it does
 
-Twelve stages, each a separate helper script under `scripts/`:
+Stages run in order (numbering is automatic in `bootstrap.sh`):
 
 1. Pre-flight checks (assert macOS, cache sudo).
 2. Install Homebrew (official installer).
@@ -31,7 +31,8 @@ Twelve stages, each a separate helper script under `scripts/`:
    + Apple Keychain, register the public key with GitHub via `gh`.
 10. Install Claude Code (official installer); user runs `/login` interactively.
 11. Clone the private `claude-memory` repo into the Claude Code memory dir.
-12. Print a manual follow-up checklist.
+12. Symlink the gitleaks pre-commit hook into the clone's `.git/hooks`.
+13. Print a manual follow-up checklist.
 
 ## Security model
 

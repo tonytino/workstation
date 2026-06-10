@@ -46,15 +46,22 @@ REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS="${REPO_ROOT}/scripts"
 MACOS_DIR="${REPO_ROOT}/macos"
 
+# Stage numbering is automatic. banner() increments a counter, and TOTAL is
+# derived by counting the stage invocations in this file. Add, remove, or
+# reorder `banner "..."` calls freely -- nothing needs manual renumbering.
+STAGE=0
+TOTAL="$(grep -cE '^banner ' "${BASH_SOURCE[0]}")"
+
 banner() {
+  STAGE=$((STAGE + 1))
   echo
   echo "=============================================================="
-  echo " $1"
+  echo " [${STAGE}/${TOTAL}] $1"
   echo "=============================================================="
 }
 
-# 1. Pre-flight ----------------------------------------------------------------
-banner "1/12 Pre-flight checks"
+# Pre-flight -------------------------------------------------------------------
+banner "Pre-flight checks"
 if [ "$(uname)" != "Darwin" ]; then
   echo "This script is macOS-only. Aborting."
   exit 1
@@ -68,8 +75,8 @@ trap 'if [ -n "${SUDO_KEEPALIVE_PID}" ]; then kill "${SUDO_KEEPALIVE_PID}" 2>/de
 ( while true; do sudo -n true; sleep 30; kill -0 "$$" 2>/dev/null || exit; done ) 2>/dev/null &
 SUDO_KEEPALIVE_PID=$!
 
-# 2. Homebrew -----------------------------------------------------------------
-banner "2/12 Homebrew"
+# Homebrew -----------------------------------------------------------------
+banner "Homebrew"
 bash "${SCRIPTS}/install-homebrew.sh"
 if [ -x /opt/homebrew/bin/brew ]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -77,16 +84,16 @@ elif [ -x /usr/local/bin/brew ]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
 
-# 3. 1Password app + CLI ------------------------------------------------------
-banner "3/12 1Password app + CLI"
+# 1Password app + CLI ------------------------------------------------------
+banner "1Password app + CLI"
 bash "${SCRIPTS}/install-1password.sh"
 
-# 4. chezmoi ------------------------------------------------------------------
-banner "4/12 chezmoi"
+# chezmoi ------------------------------------------------------------------
+banner "chezmoi"
 bash "${SCRIPTS}/install-chezmoi.sh"
 
-# 5. Apply chezmoi (renders templates, lays down configs) ---------------------
-banner "5/12 chezmoi apply"
+# Apply chezmoi (renders templates, lays down configs) ---------------------
+banner "chezmoi apply"
 # Pass --source explicitly: `chezmoi init --source=...` does NOT persist the
 # source dir to config, so a bare `chezmoi apply` would fall back to the
 # default (~/.local/share/chezmoi) and silently no-op when run from a clone
@@ -94,17 +101,17 @@ banner "5/12 chezmoi apply"
 echo "Applying chezmoi from ${REPO_ROOT} (renders templates, lays down configs)..."
 chezmoi apply --source="${REPO_ROOT}"
 
-# 6. Brewfile (CLIs, fonts, casks) --------------------------------------------
-banner "6/12 Brewfile"
+# Brewfile (CLIs, fonts, casks) --------------------------------------------
+banner "Brewfile"
 brew bundle --file="${MACOS_DIR}/Brewfile"
 
-# 7. macOS defaults -----------------------------------------------------------
-banner "7/12 macOS defaults"
+# macOS defaults -----------------------------------------------------------
+banner "macOS defaults"
 bash "${MACOS_DIR}/defaults.sh"
 
-# 8. GitHub auth (interactive if not already authed) -------------------------
+# GitHub auth (interactive if not already authed) -------------------------
 # Done BEFORE SSH provisioning so 'gh ssh-key add' has the right OAuth scope.
-banner "8/12 GitHub auth"
+banner "GitHub auth"
 REQUIRED_SCOPES="admin:public_key,repo,read:org,workflow"
 if gh auth status 2>&1 | grep -q "Token scopes"; then
   echo "gh already authenticated. Refreshing scopes to include admin:public_key..."
@@ -114,22 +121,39 @@ else
   gh auth login --scopes "${REQUIRED_SCOPES}"
 fi
 
-# 9. SSH key + GitHub registration --------------------------------------------
-banner "9/12 SSH key + GitHub registration"
+# SSH key + GitHub registration --------------------------------------------
+banner "SSH key + GitHub registration"
 bash "${SCRIPTS}/provision-ssh.sh"
 
-# 10. Claude Code -------------------------------------------------------------
-banner "10/12 Claude Code"
+# Claude Code -------------------------------------------------------------
+banner "Claude Code"
 bash "${SCRIPTS}/install-claude-code.sh"
 
-# 11. Claude memory -----------------------------------------------------------
+# Claude memory -----------------------------------------------------------
 # Clone the private agent-memory repo into place. Runs after SSH provisioning
-# (stage 9) so the SSH remote authenticates.
-banner "11/12 Claude memory"
+# so the SSH remote authenticates.
+banner "Claude memory"
 bash "${SCRIPTS}/clone-claude-memory.sh"
 
-# 12. Manual follow-up checklist ----------------------------------------------
-banner "12/12 Manual follow-ups"
+# Pre-commit hook --------------------------------------------------------------
+# Wire the repo's gitleaks pre-commit hook into this clone so local commits to
+# the workstation repo are scanned before they land (CI is the backstop, not
+# the first line). Idempotent; leaves a pre-existing non-symlink hook alone.
+banner "Pre-commit secret-scan hook"
+if [ -d "${REPO_ROOT}/.git" ]; then
+  HOOK_DST="${REPO_ROOT}/.git/hooks/pre-commit"
+  if [ -e "${HOOK_DST}" ] && [ ! -L "${HOOK_DST}" ]; then
+    echo "Existing non-symlink pre-commit hook found; leaving it untouched."
+  else
+    ln -sf "../../scripts/pre-commit-secret-scan.sh" "${HOOK_DST}"
+    echo "Linked pre-commit secret-scan hook into ${HOOK_DST}."
+  fi
+else
+  echo "No .git dir at ${REPO_ROOT}; skipping pre-commit hook install."
+fi
+
+# Manual follow-up checklist ----------------------------------------------
+banner "Manual follow-ups"
 cat <<'EOF'
 
 Bootstrap complete. A few things require human clicks; do these now:

@@ -64,8 +64,9 @@ else
   alias llr='ls -ltr'
 fi
 
-# bat replaces cat when available.
-command -v bat >/dev/null && alias cat='bat --style=plain --paging=never'
+# bat as `bcat` when available. Deliberately NOT aliased over `cat` so cat
+# keeps its standard behavior in interactive pipes/heredocs.
+command -v bat >/dev/null && alias bcat='bat --style=plain --paging=never'
 
 alias src="cd ~/src && ll"
 alias reload='. ~/.zshrc'
