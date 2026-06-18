@@ -3,6 +3,12 @@
 # them. Private keys live in ~/.ssh/ and are NEVER committed (chezmoi's
 # `private_` prefix sets file mode 0600).
 
+# Machine-local overrides, NOT managed by chezmoi. Included first because
+# ssh_config takes the first-obtained value for most keywords, so anything
+# set here wins over the blocks below. SSH silently ignores this line when
+# the file doesn't exist.
+Include ~/.ssh/config.local
+
 Host *
   AddKeysToAgent yes
   UseKeychain yes
