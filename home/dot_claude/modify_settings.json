@@ -44,14 +44,22 @@ JSON
 
 existing="$(cat)"
 
-# Fresh machine (no existing file) or jq not yet installed (chezmoi apply runs
-# before the Brewfile stage): emit the managed config verbatim. There's nothing
-# to preserve in that case.
-if [ -z "${existing//[[:space:]]/}" ] || ! command -v jq >/dev/null 2>&1; then
+# Fresh machine (no existing file): nothing to preserve, so emit the managed
+# config verbatim.
+if [ -z "${existing//[[:space:]]/}" ]; then
   printf '%s\n' "${MANAGED}"
   exit 0
 fi
 
-# Otherwise deep-merge managed keys over the existing file, preserving any
-# runtime-written keys.
+# An existing file is present but jq isn't installed yet (chezmoi apply runs
+# before the Brewfile stage installs jq), so we can't safely deep-merge. Refuse
+# to clobber the user's file: pass it through unchanged. A later `chezmoi apply`
+# (once jq exists) will perform the merge.
+if ! command -v jq >/dev/null 2>&1; then
+  printf '%s' "${existing}"
+  exit 0
+fi
+
+# jq is available and there's an existing file: deep-merge managed keys over it,
+# preserving any runtime-written keys.
 printf '%s' "${existing}" | jq --argjson managed "${MANAGED}" '. * $managed'
