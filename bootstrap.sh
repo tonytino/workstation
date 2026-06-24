@@ -51,6 +51,12 @@ REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS="${REPO_ROOT}/scripts"
 MACOS_DIR="${REPO_ROOT}/macos"
 
+# The guarded chezmoi-apply stage records any files it skipped (to avoid
+# clobbering pre-existing content) here, one path per line. The final
+# follow-up checklist reads it back. Cleaned up on EXIT (see trap below).
+SKIPPED_FILE="$(mktemp)"
+export SKIPPED_FILE
+
 # Stage numbering is automatic. banner() increments a counter, and TOTAL is
 # derived by counting the stage invocations in this file. Add, remove, or
 # reorder `banner "..."` calls freely -- nothing needs manual renumbering.
@@ -76,7 +82,7 @@ sudo -v
 # Keep sudo alive until the script ends. Trap is installed BEFORE forking the
 # keepalive so a crash between fork and trap-install can't leave it orphaned.
 SUDO_KEEPALIVE_PID=""
-trap 'if [ -n "${SUDO_KEEPALIVE_PID}" ]; then kill "${SUDO_KEEPALIVE_PID}" 2>/dev/null || true; fi' EXIT
+trap 'if [ -n "${SUDO_KEEPALIVE_PID}" ]; then kill "${SUDO_KEEPALIVE_PID}" 2>/dev/null || true; fi; rm -f "${SKIPPED_FILE}"' EXIT
 ( while true; do sudo -n true; sleep 30; kill -0 "$$" 2>/dev/null || exit; done ) 2>/dev/null &
 SUDO_KEEPALIVE_PID=$!
 
@@ -103,8 +109,13 @@ banner "chezmoi apply"
 # source dir to config, so a bare `chezmoi apply` would fall back to the
 # default (~/.local/share/chezmoi) and silently no-op when run from a clone
 # elsewhere. .chezmoiroot inside the repo redirects the source to ./home/.
+#
+# Use the guarded wrapper instead of a bare `chezmoi apply`: it applies purely
+# additive changes silently, but prompts per-file before overwriting or
+# deleting any pre-existing file (skip / overwrite / backup). Files the user
+# skips are recorded in SKIPPED_FILE and surfaced in the final checklist.
 echo "Applying chezmoi from ${REPO_ROOT} (renders templates, lays down configs)..."
-chezmoi apply --source="${REPO_ROOT}"
+bash "${SCRIPTS}/chezmoi-apply-guarded.sh" "${REPO_ROOT}"
 
 # Brewfile (CLIs, fonts, casks) --------------------------------------------
 banner "Brewfile"
@@ -182,3 +193,14 @@ Verify the install:
   claude --version
 
 EOF
+
+# Surface any files the guarded chezmoi-apply stage skipped to protect existing
+# content, with the exact command to adopt each one later.
+if [ -s "${SKIPPED_FILE}" ]; then
+  echo "Skipped to protect existing files. To adopt any of these later, run:"
+  while IFS= read -r skipped_path; do
+    [ -n "${skipped_path}" ] || continue
+    echo "  chezmoi apply --source=\"${REPO_ROOT}\" \"${skipped_path}\""
+  done <"${SKIPPED_FILE}"
+  echo
+fi

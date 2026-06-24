@@ -21,8 +21,11 @@ Stages run in order (numbering is automatic in `bootstrap.sh`):
 3. Install the 1Password app + `op` CLI; pause for manual sign-in and CLI
    integration.
 4. Install chezmoi.
-5. `chezmoi apply` — renders every template under `home/` into `$HOME`. Any
-   value that comes from 1Password is read at apply time via `op`.
+5. `chezmoi apply` — renders every template under `home/` into `$HOME` through a
+   non-destructive guard: additive changes apply silently, but any file that
+   already exists prompts before being overwritten (skip / overwrite / backup),
+   and skipped files are listed in the final checklist. Any value that comes
+   from 1Password is read at apply time via `op`.
 6. `brew bundle` against `macos/Brewfile` — CLIs, fonts, casks.
 7. `macos/defaults.sh` — curated, reversible `defaults write` commands.
 8. `gh auth login` (or `gh auth refresh`) with the `admin:public_key` scope so
