@@ -111,16 +111,15 @@ prompt_for_change() {
         return 0
         ;;
       d|D)
-        # Show a COLOURIZED diff, but defend against terminal-probe leakage.
-        # A pager/colorizer queries the terminal (cursor-position report, OSC 11
-        # background colour); the terminal writes its replies into the tty input
-        # buffer, and those bytes would otherwise pollute the next choice `read`
-        # (e.g. a typed `o` arriving with escape bytes -> "Unrecognized choice").
-        # --no-pager drops the pager (and its cursor query); then we drain any
-        # remaining query-replies. The drain times out fast (0.1s) so it can't
-        # swallow a real keystroke -- the user is still reading the diff here.
-        chezmoi diff --no-pager --color=true --source="${SRC}" "${dest}" >/dev/tty 2>&1 || true
-        IFS= read -r -t 0.1 -d '' -n 4096 -s _ </dev/tty 2>/dev/null || true
+        # Show a COLOURIZED diff WITHOUT letting chezmoi probe the terminal.
+        # Writing a diff straight to the TTY makes chezmoi query the terminal
+        # (cursor-position report, OSC 11 background colour); the terminal's
+        # replies land in the tty input buffer and then pollute the next choice
+        # `read` (e.g. a typed `o` arriving with escape bytes -> "Unrecognized
+        # choice"). Piping through `cat` means chezmoi's stdout is a pipe, not a
+        # TTY, so it never emits those queries; --color=true forces the ANSI
+        # colours through the pipe regardless.
+        chezmoi diff --no-pager --color=true --source="${SRC}" "${dest}" 2>&1 | cat >/dev/tty || true
         # Loop re-prompts the same file.
         ;;
       *)
@@ -174,10 +173,13 @@ done 3<<<"${status_output}"
 # Apply only the approved set. Never run a bare `chezmoi apply`: with no path
 # arguments it would apply EVERYTHING, defeating the guard. The
 # "${arr[@]+...}" form keeps `set -u` happy when the array is empty.
+# --force: we already obtained the user's per-file decision above, so suppress
+# chezmoi's own "X has changed since chezmoi last wrote it" re-prompt (which
+# otherwise fires on re-runs / files modified since a prior apply).
 applied_count="${#apply_paths[@]}"
 if [ "${applied_count}" -gt 0 ]; then
   echo "Applying ${applied_count} change(s) from ${SRC}..."
-  chezmoi apply --source="${SRC}" "${apply_paths[@]+"${apply_paths[@]}"}"
+  chezmoi apply --force --source="${SRC}" "${apply_paths[@]+"${apply_paths[@]}"}"
 else
   echo "Nothing to apply (no additive changes and no conflicts approved)."
 fi
