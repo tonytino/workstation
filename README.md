@@ -37,8 +37,9 @@ Stages run in order (numbering is automatic in `bootstrap.sh`):
 ## Security model
 
 - **No secrets in the repo, ever.** Templates reference 1Password items by
-  name (e.g. `op://Personal/Git Identity/email`); the actual values land on
-  disk only in the rendered private files in `$HOME`.
+  name (e.g. `op://<vault>/Git Identity/email`, where `<vault>` is the prompted
+  `opVault` var); the actual values land on disk only in the rendered private
+  files in `$HOME`.
 - Anything `op` cannot supply is `read -p`-prompted at apply time.
 - Private SSH keys are generated locally and never committed in any form
   (encrypted or otherwise). Only the public key is sent to GitHub.
@@ -106,6 +107,14 @@ work Mac without conflict.
 | `~/.gitconfig` | `~/.gitconfig.local` (via `[include]`) | work email scoped to work repos via `[includeIf "gitdir:~/work/"]`, signing keys |
 | `~/.claude/CLAUDE.md` | `~/.claude/CLAUDE.local.md` (via Claude Code `@import`) | machine-specific Claude Code rules |
 | `~/.ssh/config` | `~/.ssh/config.local` (via `Include`, first-match-wins) | machine-specific host blocks, jump hosts |
+
+For git specifically, the managed `~/.gitconfig` ends with
+`[include] path = ~/.gitconfig.local`, so a per-machine `~/.gitconfig.local`
+can override the 1Password-sourced identity — e.g. scope a work email to work
+repos with `[includeIf "gitdir:~/work/"]`. The 1Password vault holding the
+`Git Identity` item is itself prompted once at `chezmoi init` (the `opVault`
+data var, defaulting to `Personal`), so a work machine can point at a
+differently named vault without editing the repo.
 
 The repo itself installs **no Node runtime or version manager** — Node is
 delegated to `~/.zshrc.local` so a work machine can use nvm and a personal one
