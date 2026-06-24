@@ -8,7 +8,7 @@
 2. **Homebrew** — install if missing.
 3. **1Password app + CLI** — installs both, then pauses for the user to sign in to the desktop app and enable CLI integration. `op whoami` must succeed before continuing.
 4. **chezmoi** — install via brew.
-5. **chezmoi apply** — renders templates from `home/` (per `.chezmoiroot`) into `$HOME`. Templates that reference `op://...` will fail if the 1Password stage didn't authenticate.
+5. **chezmoi apply** — renders templates from `home/` (per `.chezmoiroot`) into `$HOME` via `scripts/chezmoi-apply-guarded.sh` (never a bare `chezmoi apply`). Purely additive changes apply silently; any change that would overwrite or delete a pre-existing file prompts per-file (skip / overwrite / backup-then-overwrite / diff). With no TTY it defaults every conflict to skip rather than clobber. Skipped paths are recorded in `SKIPPED_FILE` and listed in the final checklist with the command to adopt them later. Templates that reference `op://...` will fail if the 1Password stage didn't authenticate.
 6. **Brewfile** — `brew bundle` against `macos/Brewfile`.
 7. **macOS defaults** — `macos/defaults.sh`, all curated and reversible.
 8. **GitHub auth** — `gh auth login` (or `gh auth refresh`) with `admin:public_key` scope so the next stage can register the SSH key.
