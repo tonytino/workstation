@@ -21,10 +21,14 @@ else
   echo "You will be prompted for a passphrase. Use a strong one --"
   echo "it gets cached in macOS Keychain so you only enter it once."
 
-  # Comment uses the email on the user's git identity (read from 1Password
-  # via op if available, else prompted). The comment goes in the public key
-  # only; not a secret.
-  COMMENT="$(op read 'op://Personal/Git Identity/email' 2>/dev/null || true)"
+  # Comment uses the email on the user's git identity. Prefer the value already
+  # resolved by bootstrap.sh (WS_GIT_EMAIL); else read from 1Password against the
+  # resolved vault (WS_OP_VAULT, default Personal); else prompt. The comment goes
+  # in the public key only; not a secret.
+  COMMENT="${WS_GIT_EMAIL:-}"
+  if [ -z "${COMMENT}" ]; then
+    COMMENT="$(op read "op://${WS_OP_VAULT:-Personal}/Git Identity/email" 2>/dev/null || true)"
+  fi
   if [ -z "${COMMENT}" ]; then
     read -p "Enter email to use as the SSH key comment: " COMMENT
   fi

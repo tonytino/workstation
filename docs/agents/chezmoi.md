@@ -16,7 +16,12 @@ Stack them: `private_dot_ssh/config.tmpl` → `~/.ssh/config` (mode `0600`, temp
 
 ## Template functions used in this repo
 
-- `onepasswordRead "op://..."` — fetches a secret from 1Password CLI at apply time. See [secrets.md](secrets.md).
+- `onepasswordRead "op://..."` — fetches a secret from 1Password CLI at apply time. Hard-errors (aborting the render) if the item can't be resolved. See [secrets.md](secrets.md).
+- `promptStringOnce . "key" "prompt" ["default"]` — used only in the config template `home/.chezmoi.toml.tmpl` (evaluated at `chezmoi init`), where the result is persisted to `[data]` and reused by later apply/status without re-prompting.
+
+### Git identity: shell-resolved, persisted to `[data]`
+
+The Git identity is NOT read via `onepasswordRead` in `dot_gitconfig.tmpl`. Instead `bootstrap.sh` resolves the vault/name/email in shell (op with an interactive fallback), exports `WS_OP_VAULT`/`WS_GIT_NAME`/`WS_GIT_EMAIL`, and a single `chezmoi init` evaluates `home/.chezmoi.toml.tmpl` to persist them into `[data]` (`opVault`/`gitName`/`gitEmail`). The config template prefers the `WS_*` env vars and falls back to `promptStringOnce` for standalone `chezmoi init` runs. `dot_gitconfig.tmpl` then reads `{{ .gitName }}`/`{{ .gitEmail }}`. This avoids the render-aborting failure mode of `onepasswordRead` and the double prompt of evaluating the config template on both `status` and `apply`.
 
 ## Per-machine config: three mechanisms
 

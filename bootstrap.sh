@@ -110,6 +110,46 @@ bash "${SCRIPTS}/install-1password.sh"
 banner "chezmoi"
 bash "${SCRIPTS}/install-chezmoi.sh"
 
+# Git identity + chezmoi init ----------------------------------------------
+banner "Git identity + chezmoi init"
+# Resolve the Git identity (1Password vault, name, email) HERE, in shell,
+# rather than in the gitconfig template. Why:
+# - `onepasswordRead` inside a file template (dot_gitconfig.tmpl) HARD-ERRORS
+#   if the item can't be resolved (missing/locked/misnamed vault). Go templates
+#   have no try/catch, so a single failed read aborts the whole render (#26).
+#   Resolving in shell lets us fall back gracefully to an interactive prompt.
+# - We persist these values into chezmoi's [data] via a single `chezmoi init`
+#   below, so the subsequent guarded status/apply reuse them WITHOUT
+#   re-prompting (fixes the double vault prompt from #25).
+# Prompts read from /dev/tty, never stdin: in remote-mode bootstrap stdin is
+# the curl pipe, so `read` from stdin would get garbage or EOF.
+if [ -z "${WS_OP_VAULT:-}" ]; then
+  printf '%s' "1Password vault for Git Identity [Personal]: " >/dev/tty
+  read -r WS_OP_VAULT </dev/tty || true
+  WS_OP_VAULT="${WS_OP_VAULT:-Personal}"
+fi
+WS_GIT_NAME="$(op read "op://${WS_OP_VAULT}/Git Identity/name" 2>/dev/null || true)"
+if [ -z "${WS_GIT_NAME}" ]; then
+  printf '%s' "Git author name: " >/dev/tty
+  read -r WS_GIT_NAME </dev/tty || true
+fi
+WS_GIT_EMAIL="$(op read "op://${WS_OP_VAULT}/Git Identity/email" 2>/dev/null || true)"
+if [ -z "${WS_GIT_EMAIL}" ]; then
+  printf '%s' "Git author email: " >/dev/tty
+  read -r WS_GIT_EMAIL </dev/tty || true
+fi
+export WS_OP_VAULT WS_GIT_NAME WS_GIT_EMAIL
+
+# Plain `chezmoi init` (NOT --apply): this evaluates the config template
+# (home/.chezmoi.toml.tmpl) exactly once, which reads the WS_* env vars above
+# and PERSISTS them to ~/.config/chezmoi/chezmoi.toml [data]. The guarded
+# status/apply that follows reuse that persisted data, so the vault prompt
+# never appears twice (#25).
+# Note: `chezmoi init --source=...` does NOT persist the source dir to config,
+# so --source must still be passed to the apply/status calls below.
+echo "Initializing chezmoi config from ${REPO_ROOT} (persists Git identity to [data])..."
+chezmoi init --source="${REPO_ROOT}"
+
 # Apply chezmoi (renders templates, lays down configs) ---------------------
 banner "chezmoi apply"
 # Pass --source explicitly: `chezmoi init --source=...` does NOT persist the
