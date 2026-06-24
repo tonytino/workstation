@@ -5,6 +5,8 @@
 # guard inspects the pending changes first and, for any change that would
 # modify or delete a file that already exists, prompts the user per-file:
 #   [s]kip / [o]verwrite / [b]ackup then overwrite / [d]iff
+# When the conflicting file has a machine-local sidecar (e.g. ~/.zshrc.local),
+# the prompt also hints how to preserve the user's current content.
 # Purely additive changes (the destination does not exist yet) are applied
 # without prompting. Skipped files are recorded so the caller can list them in
 # the final follow-up checklist with the command to adopt them later.
@@ -56,12 +58,34 @@ backup_dest() {
   echo "Backed up ${dest} -> ${backup}"
 }
 
+# Print a hint when the conflicting file has a machine-local sidecar, so the
+# user can preserve their current content (copy it into the sidecar) instead of
+# losing it on overwrite. Echoes nothing for files without a sidecar.
+sidecar_hint() {
+  case "$1" in
+    .zshrc)
+      echo "~/.zshrc sources ~/.zshrc.local -- copy anything you want to keep into ~/.zshrc.local before overwriting." ;;
+    .zprofile)
+      echo "~/.zprofile sources ~/.zprofile.local -- copy anything you want to keep into ~/.zprofile.local before overwriting." ;;
+    .gitconfig)
+      echo "~/.gitconfig includes ~/.gitconfig.local -- move any settings you want to keep into ~/.gitconfig.local before overwriting." ;;
+    .ssh/config)
+      echo "~/.ssh/config includes ~/.ssh/config.local -- copy any host blocks you want to keep into ~/.ssh/config.local before overwriting." ;;
+    .claude/CLAUDE.md)
+      echo "~/.claude/CLAUDE.md imports ~/.claude/CLAUDE.local.md -- move any rules you want to keep into ~/.claude/CLAUDE.local.md before overwriting." ;;
+  esac
+}
+
 # Prompt for a single risky (M/D) change and act on the answer. Adds to
 # apply_paths on overwrite/backup, records a skip otherwise.
 prompt_for_change() {
-  local rel="$1" dest="$2" choice
+  local rel="$1" dest="$2" choice hint
+  printf '%s\n' "Conflict: ${dest} already exists and would be changed." >/dev/tty
+  hint="$(sidecar_hint "${rel}")"
+  if [ -n "${hint}" ]; then
+    printf '  Tip: %s\n' "${hint}" >/dev/tty
+  fi
   while true; do
-    printf '%s\n' "Conflict: ${dest} already exists and would be changed." >/dev/tty
     printf '%s' "  [s]kip / [o]verwrite / [b]ackup then overwrite / [d]iff: " >/dev/tty
     read -r choice </dev/tty || choice="s"
     case "${choice}" in
