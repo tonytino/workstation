@@ -62,6 +62,9 @@ backup_dest() {
 # user can preserve their current content (copy it into the sidecar) instead of
 # losing it on overwrite. Echoes nothing for files without a sidecar.
 sidecar_hint() {
+  # The ~ in these strings is literal display text for the user, not a path to
+  # be expanded, so SC2088 (tilde does not expand in quotes) does not apply.
+  # shellcheck disable=SC2088
   case "$1" in
     .zshrc)
       echo "~/.zshrc sources ~/.zshrc.local -- copy anything you want to keep into ~/.zshrc.local before overwriting." ;;
