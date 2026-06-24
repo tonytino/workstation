@@ -33,7 +33,8 @@ Stages run in order (numbering is automatic in `bootstrap.sh`):
 9. Generate an ed25519 SSH key (interactive passphrase), add it to ssh-agent
    + Apple Keychain, register the public key with GitHub via `gh`.
 10. Install Claude Code (official installer); user runs `/login` interactively.
-11. Clone the private `claude-memory` repo into the Claude Code memory dir.
+11. Clone the private `claude-memory` repo into the Claude Code memory dir,
+    skipping gracefully with a recorded follow-up if the remote is unreachable.
 12. Symlink the gitleaks pre-commit hook into the clone's `.git/hooks`.
 13. Print a manual follow-up checklist.
 

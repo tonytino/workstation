@@ -57,6 +57,13 @@ MACOS_DIR="${REPO_ROOT}/macos"
 SKIPPED_FILE="$(mktemp)"
 export SKIPPED_FILE
 
+# Stages that depend on a private/external resource degrade to skip-with-
+# instructions instead of hard-failing. Each such stage appends a human-readable
+# follow-up instruction here, one per line; the final checklist reads it back.
+# Cleaned up on EXIT (see trap below).
+FOLLOWUPS_FILE="$(mktemp)"
+export FOLLOWUPS_FILE
+
 # Stage numbering is automatic. banner() increments a counter, and TOTAL is
 # derived by counting the stage invocations in this file. Add, remove, or
 # reorder `banner "..."` calls freely -- nothing needs manual renumbering.
@@ -82,7 +89,7 @@ sudo -v
 # Keep sudo alive until the script ends. Trap is installed BEFORE forking the
 # keepalive so a crash between fork and trap-install can't leave it orphaned.
 SUDO_KEEPALIVE_PID=""
-trap 'if [ -n "${SUDO_KEEPALIVE_PID}" ]; then kill "${SUDO_KEEPALIVE_PID}" 2>/dev/null || true; fi; rm -f "${SKIPPED_FILE}"' EXIT
+trap 'if [ -n "${SUDO_KEEPALIVE_PID}" ]; then kill "${SUDO_KEEPALIVE_PID}" 2>/dev/null || true; fi; rm -f "${SKIPPED_FILE}"; rm -f "${FOLLOWUPS_FILE}"' EXIT
 ( while true; do sudo -n true; sleep 30; kill -0 "$$" 2>/dev/null || exit; done ) 2>/dev/null &
 SUDO_KEEPALIVE_PID=$!
 
@@ -202,5 +209,16 @@ if [ -s "${SKIPPED_FILE}" ]; then
     [ -n "${skipped_path}" ] || continue
     echo "  chezmoi apply --source=\"${REPO_ROOT}\" \"${skipped_path}\""
   done <"${SKIPPED_FILE}"
+  echo
+fi
+
+# Surface any stages that degraded to a graceful skip (e.g. a private repo that
+# was unreachable), with the human-readable instruction to finish them later.
+if [ -s "${FOLLOWUPS_FILE}" ]; then
+  echo "Some stages were skipped. To finish them later:"
+  while IFS= read -r line; do
+    [ -n "${line}" ] || continue
+    echo "  - ${line}"
+  done <"${FOLLOWUPS_FILE}"
   echo
 fi
