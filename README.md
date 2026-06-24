@@ -105,6 +105,7 @@ work Mac without conflict.
 | `~/.zprofile` | `~/.zprofile.local.pre`, `~/.zprofile.local` | login-shell-only machine bits |
 | `~/.gitconfig` | `~/.gitconfig.local` (via `[include]`) | work email scoped to work repos via `[includeIf "gitdir:~/work/"]`, signing keys |
 | `~/.claude/CLAUDE.md` | `~/.claude/CLAUDE.local.md` (via Claude Code `@import`) | machine-specific Claude Code rules |
+| `~/.ssh/config` | `~/.ssh/config.local` (via `Include`, first-match-wins) | machine-specific host blocks, jump hosts |
 
 The repo itself installs **no Node runtime or version manager** — Node is
 delegated to `~/.zshrc.local` so a work machine can use nvm and a personal one
