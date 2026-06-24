@@ -5,12 +5,21 @@ One command on a fresh Mac brings it to a working development state.
 
 ## Bootstrap a new Mac
 
+macOS only — `bootstrap.sh` asserts Darwin and installs macOS-only apps via
+Homebrew casks. Run it from an **interactive shell**: several stages prompt you
+(1Password sign-in, SSH key passphrase, `gh` login).
+
 ```sh
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/tonytino/workstation/main/bootstrap.sh)"
 ```
 
-The script is idempotent — re-running it on an already-configured machine is
-safe.
+Piped from `curl`, the script first clones itself to `~/.local/share/chezmoi`
+and re-executes from there. Nothing needs to be installed up front — stage 3
+installs the 1Password app and pauses for you to sign in and enable CLI
+integration before any secrets are read.
+
+Already set this machine up once? Re-running is safe — see
+[Re-running on an already-configured machine](#re-running-on-an-already-configured-machine).
 
 ## What it does
 
@@ -21,22 +30,66 @@ Stages run in order (numbering is automatic in `bootstrap.sh`):
 3. Install the 1Password app + `op` CLI; pause for manual sign-in and CLI
    integration.
 4. Install chezmoi.
-5. `chezmoi apply` — renders every template under `home/` into `$HOME` through a
+5. Resolve the Git identity (1Password vault, name, email) in shell — `op read`
+   with an interactive prompt fallback — then `chezmoi init` once to persist it
+   into chezmoi `[data]` (so the next stage doesn't re-prompt).
+6. `chezmoi apply` — renders every template under `home/` into `$HOME` through a
    non-destructive guard: additive changes apply silently, but any file that
-   already exists prompts before being overwritten (skip / overwrite / backup),
-   and skipped files are listed in the final checklist. Any value that comes
-   from 1Password is read at apply time via `op`.
-6. `brew bundle` against `macos/Brewfile` — CLIs, fonts, casks.
-7. `macos/defaults.sh` — curated, reversible `defaults write` commands.
-8. `gh auth login` (or `gh auth refresh`) with the `admin:public_key` scope so
+   already exists prompts before being overwritten (skip / overwrite / backup /
+   diff), with a tip on preserving content via `.local` sidecars. Skipped files
+   are listed in the final checklist.
+7. `brew bundle` against `macos/Brewfile` — CLIs, fonts, casks.
+8. `macos/defaults.sh` — curated, reversible `defaults write` commands (also
+   writes an undo script).
+9. `gh auth login` (or `gh auth refresh`) with the `admin:public_key` scope so
    the next stage can register an SSH key.
-9. Generate an ed25519 SSH key (interactive passphrase), add it to ssh-agent
-   + Apple Keychain, register the public key with GitHub via `gh`.
-10. Install Claude Code (official installer); user runs `/login` interactively.
-11. Clone the private `claude-memory` repo into the Claude Code memory dir,
+10. Generate an ed25519 SSH key (interactive passphrase), add it to ssh-agent
+    + Apple Keychain, register the public key with GitHub via `gh`.
+11. Install Claude Code (official installer); user runs `/login` interactively.
+12. Clone the private `claude-memory` repo into the Claude Code memory dir,
     skipping gracefully with a recorded follow-up if the remote is unreachable.
-12. Symlink the gitleaks pre-commit hook into the clone's `.git/hooks`.
-13. Print a manual follow-up checklist.
+13. Symlink the gitleaks pre-commit hook into the clone's `.git/hooks`.
+14. Print a manual follow-up checklist.
+
+## Re-running on an already-configured machine
+
+Re-running is safe and idempotent — do it to pick up repo changes, finish a run
+that was interrupted (e.g. a network blip), or just re-assert the config. Two
+ways, depending on what changed:
+
+- **Re-run `bootstrap.sh`** (the same one-liner above). Every stage is
+  idempotent: already-installed tools are skipped, `brew bundle` only adds
+  what's missing, `defaults.sh` re-asserts settings (and regenerates its undo
+  script), and the **guarded** `chezmoi apply` only touches what differs. Use
+  this after a partial/failed run, to pull in new tooling (Brewfile additions),
+  or the first time you apply on a machine that already has hand-rolled
+  dotfiles.
+- **`chezmoi diff` + `chezmoi apply`** (see [Day-to-day use](#day-to-day-use)).
+  For routine dotfile edits once the machine is already managed by this repo.
+  Note this is a **bare** `chezmoi apply` — it does *not* go through bootstrap's
+  guard, so always preview with `chezmoi diff` first.
+
+### The non-destructive guard
+
+When run through `bootstrap.sh`, the apply step uses
+`scripts/chezmoi-apply-guarded.sh`, which protects pre-existing files:
+
+- Purely additive changes (the file doesn't exist yet) apply silently.
+- Any file that **already exists and would change** prompts per-file:
+  `skip` / `overwrite` / `backup` (copies the original to
+  `~/.workstation-backups/<timestamp>/` first) / `diff`.
+- With no TTY (non-interactive), every conflict defaults to **skip** — it never
+  clobbers silently.
+- When the conflicting file has a machine-local sidecar (e.g. `~/.zshrc.local`),
+  the prompt tells you how to preserve your current content.
+- Anything skipped — files, plus stages that gracefully bailed (e.g. an
+  unreachable private repo) — is listed in the final checklist with the exact
+  command to finish it later.
+
+First time on a machine with existing dotfiles, the cleanest path is to move the
+content you want to keep into the `.local` sidecars (see
+[Machine-local config](#machine-local-config-not-in-this-repo)) before applying
+— or just choose `backup` at each prompt and reconcile afterward.
 
 ## Security model
 
@@ -62,6 +115,7 @@ workstation/
 ├── bootstrap.sh                     # entry point
 ├── .chezmoiroot                     # points chezmoi at home/
 ├── home/                            # everything that lands in $HOME
+│   ├── .chezmoi.toml.tmpl           # config template — prompts + persists [data]
 │   ├── dot_zshrc
 │   ├── dot_zprofile
 │   ├── dot_gitconfig.tmpl
@@ -83,6 +137,7 @@ workstation/
 │   ├── provision-ssh.sh
 │   ├── install-claude-code.sh
 │   ├── clone-claude-memory.sh
+│   ├── chezmoi-apply-guarded.sh
 │   └── pre-commit-secret-scan.sh
 └── .github/workflows/
     ├── shellcheck.yml               # bash lint
