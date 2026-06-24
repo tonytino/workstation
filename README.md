@@ -42,9 +42,10 @@ Stages run in order (numbering is automatic in `bootstrap.sh`):
 
 - **No secrets in the repo, ever.** Templates reference 1Password items by
   name (e.g. `op://<vault>/Git Identity/email`, where `<vault>` is the prompted
-  `opVault` var); the actual values land on disk only in the rendered private
-  files in `$HOME`.
-- Anything `op` cannot supply is `read -p`-prompted at apply time.
+  `opVault` var). The Git identity is resolved from 1Password at `chezmoi init`
+  time (with an interactive prompt fallback) and persisted to chezmoi `[data]`;
+  the actual values land on disk only in the rendered files in `$HOME`.
+- Anything `op` cannot supply is prompted interactively at install/apply time.
 - Private SSH keys are generated locally and never committed in any form
   (encrypted or otherwise). Only the public key is sent to GitHub.
 - `scripts/pre-commit-secret-scan.sh` runs `gitleaks` on every commit.

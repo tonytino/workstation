@@ -1,11 +1,12 @@
 ; ~/.gitconfig — managed by chezmoi (repo: tonytino/workstation)
-; Templated: name + email are pulled from 1Password at apply time.
-; The vault name is the `opVault` data var (prompted once at `chezmoi init`,
-; defaults to `Personal`). See `op item get "Git Identity" --vault "$opVault"`.
+; Templated: name + email come from chezmoi [data] (`gitName`/`gitEmail`),
+; resolved once at `chezmoi init` from 1Password (vault `opVault`) with an
+; interactive fallback — NOT read via `onepasswordRead` at apply time, so a
+; missing/locked vault can't abort the render. See `home/.chezmoi.toml.tmpl`.
 
 [user]
-  name = {{ onepasswordRead (printf "op://%s/Git Identity/name" .opVault) }}
-  email = {{ onepasswordRead (printf "op://%s/Git Identity/email" .opVault) }}
+  name = {{ .gitName }}
+  email = {{ .gitEmail }}
 
 [alias]
   a = add

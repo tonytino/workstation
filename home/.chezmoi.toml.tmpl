@@ -1,2 +1,15 @@
+{{- /* Git identity for [data]. Sourced from the WS_* env vars exported by
+       bootstrap.sh (resolved there via op-with-prompt-fallback), else from
+       interactive prompts for a standalone `chezmoi init` outside bootstrap.
+       Explicit if/else (not `default`) so the prompt is NOT evaluated eagerly
+       when the env var is already set. */ -}}
+{{- $vault := env "WS_OP_VAULT" -}}
+{{- if not $vault -}}{{- $vault = promptStringOnce . "opVault" "1Password vault for Git Identity" "Personal" -}}{{- end -}}
+{{- $name := env "WS_GIT_NAME" -}}
+{{- if not $name -}}{{- $name = promptStringOnce . "gitName" "Git author name" -}}{{- end -}}
+{{- $email := env "WS_GIT_EMAIL" -}}
+{{- if not $email -}}{{- $email = promptStringOnce . "gitEmail" "Git author email" -}}{{- end -}}
 [data]
-    opVault = {{ promptStringOnce . "opVault" "1Password vault for Git Identity" "Personal" | quote }}
+    opVault = {{ $vault | quote }}
+    gitName = {{ $name | quote }}
+    gitEmail = {{ $email | quote }}
