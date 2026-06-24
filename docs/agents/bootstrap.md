@@ -14,7 +14,7 @@
 8. **GitHub auth** — `gh auth login` (or `gh auth refresh`) with `admin:public_key` scope so the next stage can register the SSH key.
 9. **SSH key + GitHub registration** — generate ed25519 (interactive passphrase prompt), add to ssh-agent + Apple Keychain, register the public key with GitHub.
 10. **Claude Code** — install via Anthropic's official installer.
-11. **Claude memory** — clone the private `claude-memory` repo into `~/.claude/projects/<encoded-cwd>/memory` (via `scripts/clone-claude-memory.sh`). Idempotent: pulls if already cloned, refuses to clobber a non-git memory dir.
+11. **Claude memory** — clone the private `claude-memory` repo into `~/.claude/projects/<encoded-cwd>/memory` (via `scripts/clone-claude-memory.sh`). Idempotent: pulls if already cloned. Probes the remote first and, if it's unreachable (SSH not set up yet, or no access) or a non-git memory dir is in the way, skips gracefully with a recorded follow-up instead of aborting the run. Skipped stages are surfaced in the final checklist.
 12. **Pre-commit secret-scan hook** — symlink `scripts/pre-commit-secret-scan.sh` into the clone's `.git/hooks/pre-commit` so local commits are gitleaks-scanned. Idempotent; leaves a pre-existing non-symlink hook alone.
 13. **Manual follow-ups checklist** — print remaining human-click items.
 
