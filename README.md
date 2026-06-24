@@ -104,6 +104,7 @@ work Mac without conflict.
 | `~/.zshrc` | `~/.zshrc.local.pre` (early), `~/.zshrc.local` (late) | Node version manager (nvm at work), vendor shell integrations |
 | `~/.zprofile` | `~/.zprofile.local.pre`, `~/.zprofile.local` | login-shell-only machine bits |
 | `~/.gitconfig` | `~/.gitconfig.local` (via `[include]`) | work email scoped to work repos via `[includeIf "gitdir:~/work/"]`, signing keys |
+| `~/.ssh/config` | `~/.ssh/config.local` (via `Include`, first-match-wins) | machine-specific host blocks, jump hosts |
 
 The repo itself installs **no Node runtime or version manager** — Node is
 delegated to `~/.zshrc.local` so a work machine can use nvm and a personal one
