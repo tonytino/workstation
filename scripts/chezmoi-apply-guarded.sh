@@ -131,7 +131,12 @@ echo "Inspecting pending chezmoi changes from ${SRC}..."
 #   space / no change             -> ignore
 status_output="$(chezmoi status --source="${SRC}")"
 
-while IFS= read -r line; do
+# Feed the loop via fd 3, NOT stdin. The loop body calls have_tty() (which tests
+# `[ -t 0 ]`) and prompts the user, both of which need fd 0 to stay attached to
+# the terminal. A plain `while ... done <<<"${status_output}"` redirects the
+# loop's fd 0 to the here-string, so `[ -t 0 ]` is always false and every
+# conflict gets skipped as "no TTY" even in an interactive run.
+while IFS= read -r line <&3; do
   [ -n "${line}" ] || continue
   # Columns 1-2 are status flags; the path starts at column 4 (after a space).
   apply_op="${line:1:1}"
@@ -155,7 +160,7 @@ while IFS= read -r line; do
       # No change or unhandled flag -- ignore.
       ;;
   esac
-done <<<"${status_output}"
+done 3<<<"${status_output}"
 
 # Apply only the approved set. Never run a bare `chezmoi apply`: with no path
 # arguments it would apply EVERYTHING, defeating the guard. The
