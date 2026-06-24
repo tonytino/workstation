@@ -23,3 +23,11 @@ These rules apply to every Claude Code session on this machine.
 
 ## Repository conventions
 - This machine's dotfiles are managed by chezmoi from https://github.com/tonytino/workstation. Edit source files in `~/.local/share/chezmoi/` (or the cloned repo) and run `chezmoi apply`, not the rendered files in `$HOME` directly.
+
+## Machine-local overrides
+
+Machine-specific rules live in `~/.claude/CLAUDE.local.md` (not managed by
+chezmoi). It is imported below so both this file and the local one are in
+effect. The file is optional — create it by hand per machine.
+
+@~/.claude/CLAUDE.local.md
