@@ -111,7 +111,16 @@ prompt_for_change() {
         return 0
         ;;
       d|D)
-        chezmoi diff --source="${SRC}" "${dest}" >/dev/tty 2>&1 || true
+        # Show a COLOURIZED diff, but defend against terminal-probe leakage.
+        # A pager/colorizer queries the terminal (cursor-position report, OSC 11
+        # background colour); the terminal writes its replies into the tty input
+        # buffer, and those bytes would otherwise pollute the next choice `read`
+        # (e.g. a typed `o` arriving with escape bytes -> "Unrecognized choice").
+        # --no-pager drops the pager (and its cursor query); then we drain any
+        # remaining query-replies. The drain times out fast (0.1s) so it can't
+        # swallow a real keystroke -- the user is still reading the diff here.
+        chezmoi diff --no-pager --color=true --source="${SRC}" "${dest}" >/dev/tty 2>&1 || true
+        IFS= read -r -t 0.1 -d '' -n 4096 -s _ </dev/tty 2>/dev/null || true
         # Loop re-prompts the same file.
         ;;
       *)
