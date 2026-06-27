@@ -8,7 +8,7 @@ echo "Installing 1Password app + CLI..."
 # `brew bundle` from a heredoc is idempotent (skips already-installed entries).
 brew bundle --file=- <<'BREWFILE'
 cask "1password"
-brew "1password-cli"
+cask "1password-cli"
 BREWFILE
 
 echo
