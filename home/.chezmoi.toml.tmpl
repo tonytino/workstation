@@ -9,6 +9,13 @@
 {{- if not $name -}}{{- $name = promptStringOnce . "gitName" "Git author name" -}}{{- end -}}
 {{- $email := env "WS_GIT_EMAIL" -}}
 {{- if not $email -}}{{- $email = promptStringOnce . "gitEmail" "Git author email" -}}{{- end -}}
+{{- /* Persist the source dir so bare `chezmoi` commands (status/diff/apply)
+       resolve without --source, regardless of where the repo was cloned
+       (~/.local/share/chezmoi via the curl one-liner, or any local clone).
+       `chezmoi init --source=...` does NOT persist this on its own. Refreshed
+       on every `chezmoi init` / bootstrap run; if you MOVE the repo, re-run
+       `chezmoi init` to update this path. */ -}}
+sourceDir = {{ .chezmoi.sourceDir | quote }}
 [data]
     opVault = {{ $vault | quote }}
     gitName = {{ $name | quote }}
