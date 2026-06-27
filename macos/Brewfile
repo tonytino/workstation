@@ -4,14 +4,10 @@
 # Note: App Store apps (e.g. Magnet) are NOT installed via a third-party CLI.
 # bootstrap.sh prompts the user to install them manually from the App Store.
 
-# ── Taps ────────────────────────────────────────────────────────────────────
-tap "homebrew/bundle"
-
 # ── CLI tools ───────────────────────────────────────────────────────────────
 brew "gh"                # GitHub CLI
 brew "git-delta"         # better git diff pager
 brew "chezmoi"           # dotfiles manager
-brew "1password-cli"     # `op` — used by chezmoi templates for secrets
 brew "ripgrep"           # rg — fast grep
 brew "fd"                # better find
 brew "fzf"               # fuzzy finder
@@ -37,4 +33,5 @@ cask "font-symbols-only-nerd-font"
 # ── GUI apps (casks) ────────────────────────────────────────────────────────
 cask "ghostty"                # terminal
 cask "1password"              # password manager (also pulls 1password-cli auth)
+cask "1password-cli"          # `op` — used by chezmoi templates for secrets
 cask "visual-studio-code"     # primary GUI editor

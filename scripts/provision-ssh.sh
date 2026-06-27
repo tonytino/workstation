@@ -30,7 +30,10 @@ else
     COMMENT="$(op read "op://${WS_OP_VAULT:-Personal}/Git Identity/email" 2>/dev/null || true)"
   fi
   if [ -z "${COMMENT}" ]; then
-    read -p "Enter email to use as the SSH key comment: " COMMENT
+    # Prompt on /dev/tty, not stdin: in remote-mode bootstrap stdin is the curl
+    # pipe, so a read from stdin would get EOF instead of the user's input.
+    printf '%s' "Enter email to use as the SSH key comment: " >/dev/tty
+    read -r COMMENT </dev/tty || true
   fi
 
   ssh-keygen -t ed25519 -C "${COMMENT}" -f "${KEY_PATH}"

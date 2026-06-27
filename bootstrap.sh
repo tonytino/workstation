@@ -145,17 +145,21 @@ export WS_OP_VAULT WS_GIT_NAME WS_GIT_EMAIL
 # and PERSISTS them to ~/.config/chezmoi/chezmoi.toml [data]. The guarded
 # status/apply that follows reuse that persisted data, so the vault prompt
 # never appears twice (#25).
-# Note: `chezmoi init --source=...` does NOT persist the source dir to config,
-# so --source must still be passed to the apply/status calls below.
+# Note: the `--source=` FLAG is not itself persisted, but the config template
+# writes `sourceDir = {{ .chezmoi.sourceDir }}` into the generated config, so
+# after this init bare `chezmoi` commands resolve the right source without
+# --source. The apply/status calls below still pass --source explicitly for
+# determinism (and because the guard runs before this init on a fresh machine
+# has had a chance to take effect on the very first call).
 echo "Initializing chezmoi config from ${REPO_ROOT} (persists Git identity to [data])..."
 chezmoi init --source="${REPO_ROOT}"
 
 # Apply chezmoi (renders templates, lays down configs) ---------------------
 banner "chezmoi apply"
-# Pass --source explicitly: `chezmoi init --source=...` does NOT persist the
-# source dir to config, so a bare `chezmoi apply` would fall back to the
-# default (~/.local/share/chezmoi) and silently no-op when run from a clone
-# elsewhere. .chezmoiroot inside the repo redirects the source to ./home/.
+# Pass --source explicitly for determinism. The init above persists `sourceDir`
+# into the config (via the template), so bare chezmoi now resolves correctly --
+# but being explicit here keeps this stage correct even if that config is stale
+# or absent. .chezmoiroot inside the repo redirects the source to ./home/.
 #
 # Use the guarded wrapper instead of a bare `chezmoi apply`: it applies purely
 # additive changes silently, but prompts per-file before overwriting or
