@@ -53,9 +53,3 @@ scrollback-limit = 100000000
 copy-on-select = true
 clipboard-paste-protection = true
 clipboard-trim-trailing-spaces = true
-
-# ── Quick Terminal (Cmd+` from anywhere in macOS) ──────────────────────────
-keybind = global:cmd+grave_accent=toggle_quick_terminal
-quick-terminal-position = top
-quick-terminal-screen = mouse
-quick-terminal-animation-duration = 0.1
