@@ -19,3 +19,4 @@ Detailed guidance lives under `docs/agents/`; load only what your task needs.
 | [bootstrap](docs/agents/bootstrap.md) | bootstrap.sh stage layout and how to add or reorder one | editing the install flow or any helper script under `scripts/` |
 | [secrets](docs/agents/secrets.md) | 1Password references and interactive-prompt patterns | adding any step that needs a credential, key, or other sensitive value |
 | [chezmoi](docs/agents/chezmoi.md) | source-tree prefix conventions and template patterns under `home/` | adding, removing, or templating any file under `home/` |
+| [claude-hooks](docs/agents/claude-hooks.md) | Claude Code hooks shipped to ~/.claude/hooks and how they're registered | adding or changing a Claude Code hook or its settings.json registration |
