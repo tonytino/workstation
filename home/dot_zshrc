@@ -87,8 +87,8 @@ mem-sync() {
     git -C "${dir}" push
 }
 
-# Claude Code CLI — installed via the official installer to ~/.claude/local/.
-alias claude="${HOME}/.claude/local/claude"
+# Claude Code CLI — the official installer puts the `claude` launcher in
+# ~/.local/bin, which is already on PATH above. No alias needed.
 
 # ── Machine-local overrides ──────────────────────────────────────────────────
 # Per-machine config (Node version manager, vendor integrations, work-only
