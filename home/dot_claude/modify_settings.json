@@ -10,7 +10,9 @@ set -euo pipefail
 
 # The subset of settings we manage. Deep-merged over whatever already exists.
 # Object keys merge; the permissions.allow array is replaced wholesale so this
-# list stays authoritative.
+# list stays authoritative. Hooks are deliberately NOT in here: arrays are
+# replaced by the merge, which would clobber hooks other tools (e.g. peon-ping)
+# register in the same file. See HOOK_ENTRY below.
 read -r -d '' MANAGED <<'JSON' || true
 {
   "permissions": {
@@ -33,6 +35,9 @@ read -r -d '' MANAGED <<'JSON' || true
       "Bash(pnpm exec biome check:*)"
     ]
   },
+  "attribution": {
+    "pr": "🤖 Anthony's Agent"
+  },
   "theme": "dark-daltonized",
   "voiceEnabled": true,
   "voice": {
@@ -42,12 +47,20 @@ read -r -d '' MANAGED <<'JSON' || true
 }
 JSON
 
+# PreToolUse hook that enforces agent attribution (script ships via
+# home/dot_claude/hooks/). Matcher is a regex; the script itself exits fast for
+# out-of-scope tools. Built as a literal so the fresh-machine path works without jq.
+HOOK_CMD="${HOME}/.claude/hooks/agent-attribution.sh"
+HOOK_ENTRY="{\"matcher\": \"Bash|mcp__.*\", \"hooks\": [{\"type\": \"command\", \"command\": \"${HOOK_CMD}\", \"timeout\": 10}]}"
+
 existing="$(cat)"
 
 # Fresh machine (no existing file): nothing to preserve, so emit the managed
-# config verbatim.
+# config plus the hook registration verbatim (no jq needed).
 if [ -z "${existing//[[:space:]]/}" ]; then
-  printf '%s\n' "${MANAGED}"
+  # Splice the hooks object in before MANAGED's closing brace.
+  body="${MANAGED%\}}"
+  printf '%s,\n  "hooks": {\n    "PreToolUse": [\n      %s\n    ]\n  }\n}\n' "${body%$'\n'}" "${HOOK_ENTRY}"
   exit 0
 fi
 
@@ -61,5 +74,11 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 # jq is available and there's an existing file: deep-merge managed keys over it,
-# preserving any runtime-written keys.
-printf '%s' "${existing}" | jq --argjson managed "${MANAGED}" '. * $managed'
+# preserving any runtime-written keys. Then append our PreToolUse hook unless an
+# entry already runs agent-attribution.sh (idempotent; leaves other hooks alone).
+printf '%s' "${existing}" | jq --argjson managed "${MANAGED}" --argjson hook "${HOOK_ENTRY}" '
+  . * $managed
+  | if any(.hooks.PreToolUse[]?.hooks[]?; (.command? // "") | endswith("/agent-attribution.sh"))
+    then .
+    else .hooks.PreToolUse = ((.hooks.PreToolUse // []) + [$hook])
+    end'
