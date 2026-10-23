@@ -53,6 +53,12 @@ JSON
 HOOK_CMD="${HOME}/.claude/hooks/agent-attribution.sh"
 HOOK_ENTRY="{\"matcher\": \"Bash|mcp__.*\", \"hooks\": [{\"type\": \"command\", \"command\": \"${HOOK_CMD}\", \"timeout\": 10}]}"
 
+# SessionStart hook that re-injects a session's registered charter after
+# compaction. It prints nothing for sessions without a charter, so it's safe to
+# register globally.
+CHARTER_CMD="${HOME}/.claude/hooks/session-charter.sh"
+CHARTER_ENTRY="{\"matcher\": \"compact\", \"hooks\": [{\"type\": \"command\", \"command\": \"${CHARTER_CMD}\", \"timeout\": 10}]}"
+
 existing="$(cat)"
 
 # Fresh machine (no existing file): nothing to preserve, so emit the managed
@@ -60,7 +66,7 @@ existing="$(cat)"
 if [ -z "${existing//[[:space:]]/}" ]; then
   # Splice the hooks object in before MANAGED's closing brace.
   body="${MANAGED%\}}"
-  printf '%s,\n  "hooks": {\n    "PreToolUse": [\n      %s\n    ]\n  }\n}\n' "${body%$'\n'}" "${HOOK_ENTRY}"
+  printf '%s,\n  "hooks": {\n    "PreToolUse": [\n      %s\n    ],\n    "SessionStart": [\n      %s\n    ]\n  }\n}\n' "${body%$'\n'}" "${HOOK_ENTRY}" "${CHARTER_ENTRY}"
   exit 0
 fi
 
@@ -74,11 +80,16 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 # jq is available and there's an existing file: deep-merge managed keys over it,
-# preserving any runtime-written keys. Then append our PreToolUse hook unless an
-# entry already runs agent-attribution.sh (idempotent; leaves other hooks alone).
-printf '%s' "${existing}" | jq --argjson managed "${MANAGED}" --argjson hook "${HOOK_ENTRY}" '
+# preserving any runtime-written keys. Then append our PreToolUse and
+# SessionStart hooks unless an entry already runs the same script (idempotent;
+# leaves other hooks alone).
+printf '%s' "${existing}" | jq --argjson managed "${MANAGED}" --argjson hook "${HOOK_ENTRY}" --argjson charter "${CHARTER_ENTRY}" '
   . * $managed
   | if any(.hooks.PreToolUse[]?.hooks[]?; (.command? // "") | endswith("/agent-attribution.sh"))
     then .
     else .hooks.PreToolUse = ((.hooks.PreToolUse // []) + [$hook])
+    end
+  | if any(.hooks.SessionStart[]?.hooks[]?; (.command? // "") | endswith("/session-charter.sh"))
+    then .
+    else .hooks.SessionStart = ((.hooks.SessionStart // []) + [$charter])
     end'

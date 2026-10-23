@@ -34,3 +34,32 @@ scripts/test-agent-attribution.sh
 ```
 
 Pipes fixture JSON into the hook, asserts exit codes per surface (blocked, allowed with each apostrophe, out-of-scope, `--body-file`), and checks the `modify_settings.json` merge (keeps existing hooks, adds once, idempotent, fresh machine). Prints PASS/FAIL per case; non-zero exit on any failure. ShellCheck (CI scans the whole repo) must also pass.
+
+## session-charter
+
+`hooks/executable_session-charter.sh` is a `SessionStart` hook (matcher `compact`). After every compaction, it re-injects a session's **charter** into context: a short doc holding the user's original intent, working preferences, decisions log, open questions and status. Repeated compaction summaries drift, and the charter keeps long sessions true to what was asked. The `/charter` skill (`home/dot_claude/skills/charter/SKILL.md`) drafts the charter with the user and registers it.
+
+### How it works
+
+- **Registry:** `~/.claude/charters/<session_id>` is a one-line file holding the charter's absolute path. `CLAUDE_CHARTERS_DIR` overrides the directory, which the tests use.
+- **Hook mode (no args):** reads the hook JSON from stdin.
+  - If the session is registered, it prints an instruction (the charter outranks the summary; re-read the file) plus the charter up to a `<!-- charter:end -->` line, or the whole file if there's no marker.
+  - Unregistered sessions, bad input, a session id that isn't `[A-Za-z0-9_-]+`, or missing `jq` all produce no output and exit 0. It fails open, because it must never block a session.
+  - A registered but missing charter file prints a warning instead.
+- **CLI mode:**
+  - `register <path> [session-id]`
+  - `unregister [session-id]`
+  - `show [session-id]`, which prints exactly what the hook would inject.
+  - The session id defaults to `$CLAUDE_CODE_SESSION_ID`.
+
+### Registration
+
+Same pattern as agent-attribution. After the merge, `modify_settings.json` appends one `SessionStart` entry (matcher `compact`, command `$HOME/.claude/hooks/session-charter.sh`, timeout 10), but only if no existing entry already runs `*/session-charter.sh`. The fresh-machine branch emits it too.
+
+### Testing
+
+```
+scripts/test-session-charter.sh
+```
+
+Covers register/unregister/show, the end marker, unregistered and malformed input, path-traversal ids, a missing charter file, and the `modify_settings.json` merge (adds once, keeps other `SessionStart` hooks, idempotent, fresh machine).
