@@ -63,3 +63,49 @@ scripts/test-session-charter.sh
 ```
 
 Covers register/unregister/show, the end marker, unregistered and malformed input, path-traversal ids, a missing charter file, and the `modify_settings.json` merge (adds once, keeps other `SessionStart` hooks, idempotent, fresh machine).
+
+## pr-tldr
+
+`hooks/executable_pr-tldr.sh` is a `PreToolUse` hook (matcher `Bash`) that blocks a pull request description unless its first non-blank line is a TL;DR heading. Accepted forms (any case, `TLDR` also fine, text may follow on the same line): `# TL;DR`, `## TL;DR`, `### TL;DR`, `**TL;DR**`, `TL;DR:`. On a miss it exits 2 with:
+
+```
+PR description must open with a TL;DR section: make the first line "## TL;DR" followed by a 1-3 sentence summary, then retry.
+```
+
+### Scope
+
+- `gh pr create`, always. With no `-b/--body/-F/--body-file` at all (e.g. `--fill`, `--title` only) it blocks, unless `--web`/`-w` is used. `--help` is allowed.
+- `gh pr edit`, only when it sets a body. Title/label/reviewer edits pass.
+- Any other command or tool exits 0 immediately (a cheap regex prefilter runs before any parsing).
+
+### How the body is found
+
+The command string is tokenized by a small shell-word reader in the script: single and double quotes, backslashes, `$'...'`, comments, heredocs and here-strings, and `;`/`&&`/`||`/`|`/newline separators. So `--body` inside a quoted title or a commit message is not mistaken for a flag, and a `gh pr create` chained after `git push &&` or inside `url=$(...)` is still checked. Body sources it reads:
+
+- `--body`/`-b`/`--body=`: a quoted string, `$'...'`, or `"$(cat <<'EOF' ... EOF)"` (the form Claude usually writes); also `"$(cat FILE)"` and `"$(< FILE)"`.
+- `--body-file`/`-F FILE`. Relative paths are resolved against an earlier `cd DIR` in the same command, else the hook's working directory.
+- `--body-file -` (or `/dev/stdin`) fed by a heredoc, here-string, or `< FILE` on the same command.
+
+### Known limits
+
+Parsing a shell command without running it is heuristic. Where the body genuinely can't be read, the hook allows rather than guesses:
+
+- Bodies built from variables or other command substitutions (`--body "$BODY"`), unless the first line is already complete and static before the dynamic part (`"## TL;DR\n$REST"` passes, `"Summary\n$REST"` blocks).
+- `--body-file` naming a file that doesn't exist (gh fails on it anyway).
+- Commands wrapped in `bash -c '...'`, `eval`, aliases, or scripts.
+
+One case fails closed: `--body-file -` fed by a pipe (`printf ... | gh pr create --body-file -`) is blocked, because the piped text never reaches the hook. The message asks for `--body`, a heredoc, or a file path instead.
+
+Missing `jq` and unparseable input follow agent-attribution: with no `jq`, an in-scope command whose raw JSON never mentions `TL;DR` is blocked (an `--web` create or a body-less edit passes); input `jq` can't parse, or with no tool name, exits 0.
+
+### Registration
+
+Same pattern as agent-attribution. After the merge, `modify_settings.json` appends one `PreToolUse` entry (matcher `Bash`, command `$HOME/.claude/hooks/pr-tldr.sh`, timeout 10), but only if no existing entry already runs `*/pr-tldr.sh`. The fresh-machine branch emits it too.
+
+### Testing
+
+```
+scripts/test-pr-tldr.sh
+```
+
+Covers heredoc, quoted, `$'...'` and short-flag bodies, every accepted heading form and some near misses, TL;DR present but not first, `--body-file` pass/fail (absolute, relative after `cd`, missing), stdin bodies (pipe, heredoc, here-string, `< FILE`), `--fill`/`--web`, `gh pr edit` with and without a body, compound commands and `$(...)`, dynamic bodies, out-of-scope commands and tools, the no-`jq` path, and the `modify_settings.json` merge (adds once, keeps other hooks, idempotent, fresh machine).
