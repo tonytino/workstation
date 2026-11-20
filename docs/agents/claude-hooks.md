@@ -63,3 +63,42 @@ scripts/test-session-charter.sh
 ```
 
 Covers register/unregister/show, the end marker, unregistered and malformed input, path-traversal ids, a missing charter file, and the `modify_settings.json` merge (adds once, keeps other `SessionStart` hooks, idempotent, fresh machine).
+
+## subagent-tier
+
+`hooks/executable_subagent-tier.sh` is a `PreToolUse` hook (matcher `Agent|Task`: the subagent tool is `Agent` in current Claude Code and `Task` in older versions). It enforces "subagents always run on a model below the orchestrator's tier".
+
+Tiers, lowest to highest: haiku (1) < sonnet (2) < opus (3) < fable (4). A model id containing `mythos` also counts as tier 4. Names match by case-insensitive substring, so full ids like `claude-opus-5-5` work.
+
+### Rules (in order)
+
+1. `agent_id` present (the hook fired inside a subagent): allow. Only the main session is enforced for now.
+2. `tool_input.subagent_type` is `fork`: allow. Forks always run on the session's model and ignore `model`.
+3. Session model can't be determined (no transcript, unreadable, no matching entry, unknown model): allow. It fails open, because a parsing problem must never block every subagent.
+4. Session is haiku: allow. Nothing is below it.
+5. `tool_input.model` absent or empty: block. The subagent would inherit the session's model.
+6. `tool_input.model` unknown: allow. Known and at or above the session's tier: block. Otherwise allow.
+
+A block exits 2 with a stderr message naming the session tier and the allowed models, e.g. `Subagents must run below your tier (you are opus): set model to one of: sonnet, haiku, then retry. Forks are exempt.` Unrelated tools, missing `jq` and unparseable input all exit 0.
+
+### How the session model is found
+
+The hook input doesn't include the session's model, so the hook reads the transcript at `transcript_path` (JSONL). It takes the newest entry with `type == "assistant"` and `isSidechain` not `true`, and uses its `message.model`. It skips `<synthetic>` placeholders. It reads only the last 1 MiB of the file, then the last 16 MiB if nothing matched. It pre-filters lines with `grep` before `jq`, and unsets `GREP_OPTIONS`/`GREP_COLOR(S)` so colored grep output can't corrupt the JSON. On a 159 MB transcript the hook takes about 75 ms.
+
+### Limits
+
+- The model comes from the transcript, not live session state. After a `/model` switch, the hook goes by the last model that actually replied. The first spawn of a session, before any assistant entry is written, isn't enforced.
+- Nested subagents (`agent_id` set) aren't enforced.
+- The transcript format is internal to Claude Code. If its field names change, the hook fails open rather than blocking.
+
+### Registration
+
+Same pattern as agent-attribution. After the merge, `modify_settings.json` appends one `PreToolUse` entry (matcher `Agent|Task`, command `$HOME/.claude/hooks/subagent-tier.sh`, timeout 10), but only if no existing entry already runs `*/subagent-tier.sh`. The fresh-machine branch emits it too.
+
+### Testing
+
+```
+scripts/test-subagent-tier.sh
+```
+
+Builds synthetic transcripts in a temp dir. It covers the rule matrix for fable, mythos, opus, sonnet and haiku sessions, full and mixed-case model ids, the block message, sidechain and `<synthetic>` entries being skipped, a mid-session model switch, an entry outside the first tail window, fail-open cases (missing, unparseable or assistant-less transcript, unknown model), `GREP_OPTIONS=--color=always`, unrelated tools, and the `modify_settings.json` merge (adds once, keeps other hooks, idempotent, fresh machine).
